@@ -1,0 +1,1 @@
+{:+ {:app [(:lt.objs.plugins/load-js "note_compiled.js" true)]}}

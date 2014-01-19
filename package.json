@@ -1,0 +1,19 @@
+{
+  "name": "note",
+  "version": "0.0.1",
+  "description": "FIXME",
+  "main": "note_compiled.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+      "type": "git",
+      "url": "https://github.com/liquidz/lt-note"
+  },
+  "author": "uochan",
+  "license": "GPLv3",
+  "dependencies": {
+      "moment": "~2.5.0",
+      "mkdirp": "~0.3.5"
+  }
+}

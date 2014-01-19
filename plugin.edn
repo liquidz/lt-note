@@ -1,0 +1,5 @@
+{:name      "note"
+ :author    "FIXME"
+ :source    "https://github.com/FIXME/FIXME"
+ :desc      "Light Table Plugin"
+ :behaviors "note.behaviors"}
