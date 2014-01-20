@@ -67,8 +67,11 @@
    [:hr]
    [:ul
     (map (fn [note]
-           [:li (note-button note)]
-           ) notes)]])
+           [:li
+            (-> note first files/basename files/without-ext)
+            ": "
+            (note-button note)])
+         notes)]])
 
 
 (behavior ::on-close-destroy
@@ -100,3 +103,4 @@
 (cmd/command {:command :note-list
               :desc "Note: list"
               :exec open-note-list})
+
