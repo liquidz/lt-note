@@ -95,6 +95,12 @@
     (tabs/active! x)))
 
 
+(defn clean-up []
+  (let [now (moment)
+        default-size (count (.format now DEFAULT_CONTENT))]
+    (doseq [file (files/filter-walk files/file? *note-dir*)]
+      (when (= default-size (-> file files/open-sync :content count))
+        (files/delete! file)))))
 
 (cmd/command {:command :note-new
               :desc "Note: new"
@@ -104,3 +110,6 @@
               :desc "Note: list"
               :exec open-note-list})
 
+(cmd/command {:command :note-clean-up
+              :desc "Note: cleanup"
+              :exec clean-up})
