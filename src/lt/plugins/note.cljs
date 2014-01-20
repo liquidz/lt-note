@@ -1,14 +1,12 @@
 (ns lt.plugins.note
   (:require
-   [clojure.string :as string]
-   [lt.object           :as object]
-   [lt.objs.editor      :as editor]
-   ;[lt.objs.editor.pool :as pool]
-   [lt.objs.command     :as cmd]
-   [lt.objs.files       :as files]
-   [lt.objs.tabs :as tabs]
-   [lt.objs.plugins :as plugins]
-   )
+   [clojure.string  :as string]
+   [lt.object       :as object]
+   [lt.objs.editor  :as editor]
+   [lt.objs.command :as cmd]
+   [lt.objs.files   :as files]
+   [lt.objs.tabs    :as tabs]
+   [lt.objs.plugins :as plugins])
   (:require-macros
    [lt.macros :refer [behavior defui]]))
 
@@ -102,6 +100,7 @@
       (when (= default-size (-> file files/open-sync :content count))
         (files/delete! file)))))
 
+
 (cmd/command {:command :note-new
               :desc "Note: new"
               :exec note-new})
@@ -113,3 +112,4 @@
 (cmd/command {:command :note-clean-up
               :desc "Note: cleanup"
               :exec clean-up})
+
