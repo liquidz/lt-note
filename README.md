@@ -25,14 +25,14 @@ Following commands are available.
  - user.behaviors
 ```clojure
 :app [
-    ; Directory for saving notes.
-    ; Default value: "$HOME/.notes"
-    (:lt.plugins.note/set-note-dir "/foo/bar/notes")
+  ; Directory for saving notes.
+  ; Default value: "$HOME/.notes"
+  (:lt.plugins.note/set-note-dir "/foo/bar/notes")
 
-    ; Filename format for notes.
-    ; Default value: "YYYY/MM/YYYY-MM-DD-HHmmss[.md]"
-    (:lt.plugins.note/set-filename-format "YYYY-MM-DD-HHmmss[.md]")
-]
+  ; Filename format for notes.
+  ; Default value: "YYYY/MM/YYYY-MM-DD-HHmmss[.md]"
+  (:lt.plugins.note/set-filename-format "YYYY-MM-DD-HHmmss[.md]")
+  ]
 ```
 
 
