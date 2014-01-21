@@ -10,7 +10,7 @@
   (:require-macros
    [lt.macros :refer [behavior defui]]))
 
-(def APP_NAME "note")
+(def APP_NAME "Note")
 (def DEFAULT_CONTENT "[# \n\n]YYYY-MM-DD HH:mm:ss[\n\n]")
 (def TITLE_REGEXP #"#\s?(.+)\s*")
 
@@ -55,8 +55,8 @@
     (map (fn [file]
            [file
             (-> (re-seq TITLE_REGEXP (-> file files/open-sync :content))
-                first second)]
-           ) ls)))
+                first second)])
+         ls)))
 
 (defui note-button [note]
   [:button (second note)]
@@ -64,13 +64,14 @@
            (cmd/exec! :open-path (first note))))
 
 (defui notes-screen [notes]
-  [:div
+  [:div#ltnote
    [:h1 "Notes"]
    [:hr]
    [:ul
     (map (fn [note]
            [:li
-            (-> note first files/basename files/without-ext)
+            [:span.date
+             (-> note first files/basename files/without-ext)]
             ": "
             (note-button note)])
          notes)]])

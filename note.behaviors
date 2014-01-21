@@ -1,1 +1,2 @@
-{:+ {:app [(:lt.objs.plugins/load-js "note_compiled.js" true)]}}
+{:+ {:app [(:lt.objs.plugins/load-js "note_compiled.js")
+           (:lt.objs.plugins/load-css "css/structure.css")]}}
