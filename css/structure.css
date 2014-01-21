@@ -1,0 +1,8 @@
+#ltnote {
+    padding: 0 1em;
+    overflow: auto;
+}
+
+#ltnote .date {
+    color: #aaa;
+}
