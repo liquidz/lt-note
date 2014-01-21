@@ -1,5 +1,5 @@
-{:name      "note"
- :author    "FIXME"
- :source    "https://github.com/FIXME/FIXME"
+{:name      "Note"
+ :author    "uochan"
+ :source    "https://github.com/liquidz/lt-note"
  :desc      "Light Table Plugin"
  :behaviors "note.behaviors"}

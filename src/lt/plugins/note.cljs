@@ -14,8 +14,10 @@
 (def DEFAULT_CONTENT "[# \n\n]YYYY-MM-DD HH:mm:ss[\n\n]")
 (def TITLE_REGEXP #"#\s?(.+)\s*")
 
-(def ^:dynamic *note-dir* "/Users/uochan/opt/note")
-(def ^:dynamic *note-file-name* "YYYY/MM/YYYY-MM-DD-HHmmss[.md]")
+(def note-dir (atom (files/join (files/home ".notes"))))
+(def note-filename-format (atom "YYYY/MM/YYYY-MM-DD-HHmmss[.md]"))
+
+
 
 (defn load-node-module
   "Load node.js module."
@@ -29,25 +31,27 @@
 
 (defn create-new-note-file
   "Create a new note file based on current time."
-  [filename content]
-  (mkdirp (files/parent filename))
-  (files/save filename content))
+  [filename content callback]
+  (mkdirp (files/parent filename)
+          (fn [err]
+            (files/save filename content
+                        (fn [& [e]]
+                          (callback))))))
 
 
 (defn note-new
   []
   (let [now (moment)
-        filename (.format now *note-file-name*)
-        filename (files/join *note-dir* filename)
+        filename (.format now @note-filename-format)
+        filename (files/join @note-dir filename)
         content  DEFAULT_CONTENT
         content  (.format now content)
         ]
-    (create-new-note-file filename content)
-    (cmd/exec! :open-path filename)))
+    (create-new-note-file filename content #(cmd/exec! :open-path filename))))
 
 (defn get-note-list
   []
-  (let [ls (files/filter-walk files/file? *note-dir*)]
+  (let [ls (files/filter-walk files/file? @note-dir)]
     (map (fn [file]
            [file
             (-> (re-seq TITLE_REGEXP (-> file files/open-sync :content))
@@ -96,20 +100,36 @@
 (defn clean-up []
   (let [now (moment)
         default-size (count (.format now DEFAULT_CONTENT))]
-    (doseq [file (files/filter-walk files/file? *note-dir*)]
+    (doseq [file (files/filter-walk files/file? @note-dir)]
       (when (= default-size (-> file files/open-sync :content count))
         (files/delete! file)))))
 
 
 (cmd/command {:command :note-new
-              :desc "Note: new"
+              :desc "Note: New"
               :exec note-new})
 
 (cmd/command {:command :note-list
-              :desc "Note: list"
+              :desc "Note: List"
               :exec open-note-list})
 
 (cmd/command {:command :note-clean-up
-              :desc "Note: cleanup"
+              :desc "Note: Cleanup"
               :exec clean-up})
 
+(behavior ::set-note-dir
+          :triggers #{:object.instant}
+          :type     :user
+          :desc     "Note: Set note directory"
+          :params   [{:label "Directory" :type :string}]
+          :reaction (fn [this dir]
+                      (when (files/exists? dir)
+                        (reset! note-dir dir))))
+
+(behavior ::set-note-filename-format
+          :triggers #{:object.instant}
+          :type     :user
+          :desc     "Note: Set note filename format"
+          :params   [{:label "Format (YYYY/MM/YYYY-MM-DD-HHmmss[.md])" :type :string}]
+          :reaction (fn [this s]
+                      (reset! note-filename-format s)))
