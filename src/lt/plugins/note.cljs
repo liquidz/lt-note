@@ -6,7 +6,10 @@
    [lt.objs.command :as cmd]
    [lt.objs.files   :as files]
    [lt.objs.tabs    :as tabs]
-   [lt.objs.plugins :as plugins])
+   [lt.objs.plugins :as plugins]
+   [lt.util.dom :as dom]
+   [crate.core :as crate]
+   )
   (:require-macros
    [lt.macros :refer [behavior defui]]))
 
@@ -52,30 +55,62 @@
 (defn get-note-list
   []
   (let [ls (files/filter-walk files/file? @note-dir)]
-    (map (fn [file]
-           [file
-            (-> (re-seq TITLE_REGEXP (-> file files/open-sync :content))
-                first second)])
+    (map (fn [file-path]
+           (let [title (->> file-path files/open-sync :content (re-seq TITLE_REGEXP) first second)]
+             {:title title
+              :file-path file-path}))
          ls)))
 
+(defn search-note [keyword]
+  (filter
+   (fn [note]
+     (let [content (-> note :file-path files/open-sync :content)]
+       (not= -1 (.indexOf content keyword))))
+   (get-note-list)))
+
 (defui note-button [note]
-  [:button (second note)]
+  [:button (:title note)]
   :click (fn []
-           (cmd/exec! :open-path (first note))))
+           (cmd/exec! :open-path (:file-path note))))
+
+(defui note-li-item [note]
+  [:li
+   [:span.date
+    (-> note :file-path files/basename files/without-ext)]
+   ": "
+   (note-button note)])
 
 (defui notes-screen [notes]
   [:div#ltnote
    [:h1 "Notes"]
    [:hr]
-   [:ul
-    (map (fn [note]
-           [:li
-            [:span.date
-             (-> note first files/basename files/without-ext)]
-            ": "
-            (note-button note)])
-         notes)]])
+   [:ul (map note-li-item notes)]])
 
+
+
+(defui search-input []
+  [:input {:class "keyword" :type "text" :placeholder "Search"}] )
+(defui search-button []
+  [:button "search"]
+  :click (fn []
+           (let [keyword (dom/val (dom/$ "#ltnote .keyword"))
+                 elem (dom/$ "#ltnote .result")
+                 ]
+             (dom/html elem "")
+             (dom/append elem
+                       (crate/html [:ul (map note-li-item (search-note keyword))])
+                       )
+             )
+           )
+  )
+
+(defui search-screen []
+  [:div#ltnote
+   (search-input)
+   (search-button)
+   [:div.result]
+   ]
+  )
 
 (behavior ::on-close-destroy
           :triggers #{:close}
@@ -92,11 +127,23 @@
  :init (fn [this]
          (notes-screen (get-note-list))))
 
+(object/object*
+ ::note-search
+ :name "Search Note"
+ :behaviors [::on-close-destroy]
+ :init (fn [this]
+         (search-screen))
+ )
+
 (defn open-note-list []
   (let [x (object/create ::note-list)]
     (tabs/add! x)
     (tabs/active! x)))
 
+(defn open-search-screen []
+  (let [x (object/create ::note-search)]
+    (tabs/add! x)
+    (tabs/active! x)))
 
 (defn clean-up []
   (let [now (moment)
@@ -134,3 +181,4 @@
           :params   [{:label "Format (YYYY/MM/YYYY-MM-DD-HHmmss[.md])" :type :string}]
           :reaction (fn [this s]
                       (reset! note-filename-format s)))
+
