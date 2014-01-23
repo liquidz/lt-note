@@ -153,17 +153,6 @@
         (files/delete! file)))))
 
 
-(cmd/command {:command :note-new
-              :desc "Note: New"
-              :exec note-new})
-
-(cmd/command {:command :note-list
-              :desc "Note: List"
-              :exec open-note-list})
-
-(cmd/command {:command :note-clean-up
-              :desc "Note: Cleanup"
-              :exec clean-up})
 
 (behavior ::set-note-dir
           :triggers #{:object.instant}
@@ -182,3 +171,19 @@
           :reaction (fn [this s]
                       (reset! note-filename-format s)))
 
+
+(cmd/command {:command :note-new
+              :desc "Note: New"
+              :exec note-new})
+
+(cmd/command {:command :note-list
+              :desc "Note: List"
+              :exec open-note-list})
+
+(cmd/command {:command :note-clean-up
+              :desc "Note: Cleanup"
+              :exec clean-up})
+
+(cmd/command {:command :note-search
+              :desc "Note: Search"
+              :exec open-search-screen})
