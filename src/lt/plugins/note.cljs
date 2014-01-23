@@ -2,14 +2,12 @@
   (:require
    [clojure.string  :as string]
    [lt.object       :as object]
-   [lt.objs.editor  :as editor]
    [lt.objs.command :as cmd]
    [lt.objs.files   :as files]
    [lt.objs.tabs    :as tabs]
    [lt.objs.plugins :as plugins]
-   [lt.util.dom :as dom]
-   [crate.core :as crate]
-   )
+   [lt.util.dom     :as dom]
+   [crate.core      :as crate])
   (:require-macros
    [lt.macros :refer [behavior defui]]))
 
@@ -17,9 +15,9 @@
 (def DEFAULT_CONTENT "[# \n\n]YYYY-MM-DD HH:mm:ss[\n\n]")
 (def TITLE_REGEXP #"#\s?(.+)\s*")
 
+;; Plugin variable
 (def note-dir (atom (files/join (files/home ".notes"))))
 (def note-filename-format (atom "YYYY/MM/YYYY-MM-DD-HHmmss[.md]"))
-
 
 
 (defn load-node-module
@@ -42,7 +40,7 @@
                           (callback))))))
 
 
-(defn note-new
+(defn create-new-note
   []
   (let [now (moment)
         filename (.format now @note-filename-format)
@@ -87,30 +85,23 @@
    [:ul (map note-li-item notes)]])
 
 
-
 (defui search-input []
   [:input {:class "keyword" :type "text" :placeholder "Search"}] )
+
 (defui search-button []
   [:button "search"]
   :click (fn []
            (let [keyword (dom/val (dom/$ "#ltnote .keyword"))
-                 elem (dom/$ "#ltnote .result")
-                 ]
+                 elem (dom/$ "#ltnote .result")]
              (dom/html elem "")
              (dom/append elem
-                       (crate/html [:ul (map note-li-item (search-note keyword))])
-                       )
-             )
-           )
-  )
+                       (crate/html [:ul (map note-li-item (search-note keyword))])))))
 
 (defui search-screen []
   [:div#ltnote
    (search-input)
    (search-button)
-   [:div.result]
-   ]
-  )
+   [:div.result]])
 
 (behavior ::on-close-destroy
           :triggers #{:close}
@@ -132,8 +123,7 @@
  :name "Search Note"
  :behaviors [::on-close-destroy]
  :init (fn [this]
-         (search-screen))
- )
+         (search-screen)))
 
 (defn open-note-list []
   (let [x (object/create ::note-list)]
@@ -172,9 +162,9 @@
                       (reset! note-filename-format s)))
 
 
-(cmd/command {:command :note-new
+(cmd/command {:command :new-note
               :desc "Note: New"
-              :exec note-new})
+              :exec create-new-note})
 
 (cmd/command {:command :note-list
               :desc "Note: List"
