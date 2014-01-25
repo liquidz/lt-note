@@ -16,39 +16,51 @@
 (def TITLE_REGEXP #"#\s?(.+)\s*")
 
 ;; Plugin variable
-(def note-dir (atom (files/join (files/home ".notes"))))
+; FIXME
+;(def note-dir (atom (files/join (files/home ".notes"))))
+(def note-dir (atom "/Users/uochan/opt/notes"))
 (def note-filename-format (atom "YYYY/MM/YYYY-MM-DD-HHmmss[.md]"))
+(def close-tab-when-open-file-from-list (atom true))
 
 
 (defn load-node-module
   "Load node.js module."
   [module-name]
   (js/require
-   (files/join plugins/user_plugins_dir APP_NAME "node_modules" module-name)))
+   (files/join (plugins/find-plugin APP_NAME) "node_modules" module-name)))
 
 (def moment (load-node-module "moment"))
 (def mkdirp (load-node-module "mkdirp"))
 
 
-(defn create-new-note-file
-  "Create a new note file based on current time."
+;; Note: New
+;; -----------------------------------
+(defn save-new-file
+  "Save new file."
   [filename content callback]
   (mkdirp (files/parent filename)
           (fn [err]
             (files/save filename content
-                        (fn [& [e]]
-                          (callback))))))
+                        (fn [& [err]]
+                          (callback err))))))
 
 
 (defn create-new-note
   []
-  (let [now (moment)
+  (let [now      (moment)
         filename (.format now @note-filename-format)
         filename (files/join @note-dir filename)
         content  DEFAULT_CONTENT
-        content  (.format now content)
-        ]
-    (create-new-note-file filename content #(cmd/exec! :open-path filename))))
+        content  (.format now content)]
+    (save-new-file filename content #(cmd/exec! :open-path filename))))
+
+;; Note: List
+(defui note-button-ui [note]
+  [:button (:title note)]
+  :click (fn []
+           (when @close-tab-when-open-file-from-list
+             (cmd/exec! :tabs.close))
+           (cmd/exec! :open-path (:file-path note))))
 
 (defn get-note-list
   []
@@ -59,6 +71,7 @@
               :file-path file-path}))
          ls)))
 
+;; Note: Search
 (defn search-note [keyword]
   (filter
    (fn [note]
@@ -66,23 +79,40 @@
        (not= -1 (.indexOf content keyword))))
    (get-note-list)))
 
-(defui note-button [note]
-  [:button (:title note)]
-  :click (fn []
-           (cmd/exec! :open-path (:file-path note))))
 
-(defui note-li-item [note]
+(defui note-li-item-ui [note]
   [:li
    [:span.date
     (-> note :file-path files/basename files/without-ext)]
    ": "
-   (note-button note)])
+   (note-button-ui note)])
 
-(defui notes-screen [notes]
+(defn- pressed-enter? [keyevent]
+  (= 13 (.-keyCode keyevent)))
+
+(defui search-input-ui [& [f]]
+  [:input {:type "text" :class "search-keyword" :placeholder "Search"}]
+  :keyup (fn [e]
+           (when (and f (pressed-enter? e))
+             (f (dom/val (dom/$ ".search-keyword")))
+             ))
+  )
+
+(defui note-list-ui [notes]
   [:div#ltnote
    [:h1 "Notes"]
+   (search-input-ui (fn [keyword]
+                      (let [elem (dom/$ ".note-list")]
+                        (dom/html elem "")
+                        (dom/append elem
+                                    (crate/html [:ul (map note-li-item-ui (search-note keyword))]))
+                        )))
    [:hr]
-   [:ul (map note-li-item notes)]])
+   [:div {:class "note-list"}
+    [:ul (map note-li-item-ui notes)]
+    ]
+   ]
+  )
 
 
 (defui search-input []
@@ -95,7 +125,7 @@
                  elem (dom/$ "#ltnote .result")]
              (dom/html elem "")
              (dom/append elem
-                       (crate/html [:ul (map note-li-item (search-note keyword))])))))
+                       (crate/html [:ul (map note-li-item-ui (search-note keyword))])))))
 
 (defui search-screen []
   [:div#ltnote
@@ -116,7 +146,9 @@
  :name "Notes"
  :behaviors [::on-close-destroy]
  :init (fn [this]
-         (notes-screen (get-note-list))))
+         (note-list-ui (get-note-list))
+
+         ))
 
 (object/object*
  ::note-search
@@ -128,7 +160,8 @@
 (defn open-note-list []
   (let [x (object/create ::note-list)]
     (tabs/add! x)
-    (tabs/active! x)))
+    (tabs/active! x)
+    (.focus (dom/$ ".search-keyword"))))
 
 (defn open-search-screen []
   (let [x (object/create ::note-search)]
@@ -177,3 +210,6 @@
 (cmd/command {:command :note-search
               :desc "Note: Search"
               :exec open-search-screen})
+
+
+;(open-note-list)
