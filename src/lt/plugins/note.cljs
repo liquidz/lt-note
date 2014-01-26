@@ -3,6 +3,7 @@
    [clojure.string  :as string]
    [lt.object       :as object]
    [lt.objs.command :as cmd]
+   [lt.objs.sidebar.command :as scmd]
    [lt.objs.files   :as files]
    [lt.objs.tabs    :as tabs]
    [lt.objs.plugins :as plugins]
@@ -27,10 +28,13 @@
   "Load node.js module."
   [module-name]
   (js/require
-   (files/join (plugins/find-plugin APP_NAME) "node_modules" module-name)))
+   (plugins/local-module APP_NAME module-name)
+   ;(files/join (plugins/find-plugin APP_NAME) "node_modules" module-name)
+   ))
 
 (def moment (load-node-module "moment"))
 (def mkdirp (load-node-module "mkdirp"))
+
 
 
 ;; Note: New
@@ -91,47 +95,23 @@
   (= 13 (.-keyCode keyevent)))
 
 (defui search-input-ui [& [f]]
-  [:input {:type "text" :class "search-keyword" :placeholder "Search"}]
+  [:input {:type "text" :class "search-keyword" :placeholder "Search keyword"}]
   :keyup (fn [e]
            (when (and f (pressed-enter? e))
-             (f (dom/val (dom/$ ".search-keyword")))
-             ))
-  )
+             (f (dom/val (dom/$ ".search-keyword"))))))
+
+(defn update-note-list [notes]
+  (let [elem (dom/$ ".note-list")]
+    (dom/html elem "")
+    (dom/append elem (crate/html [:ul (map note-li-item-ui notes)]))))
 
 (defui note-list-ui [notes]
   [:div#ltnote
    [:h1 "Notes"]
-   (search-input-ui (fn [keyword]
-                      (let [elem (dom/$ ".note-list")]
-                        (dom/html elem "")
-                        (dom/append elem
-                                    (crate/html [:ul (map note-li-item-ui (search-note keyword))]))
-                        )))
+   (search-input-ui #(update-note-list (search-note %)))
    [:hr]
    [:div {:class "note-list"}
-    [:ul (map note-li-item-ui notes)]
-    ]
-   ]
-  )
-
-
-(defui search-input []
-  [:input {:class "keyword" :type "text" :placeholder "Search"}] )
-
-(defui search-button []
-  [:button "search"]
-  :click (fn []
-           (let [keyword (dom/val (dom/$ "#ltnote .keyword"))
-                 elem (dom/$ "#ltnote .result")]
-             (dom/html elem "")
-             (dom/append elem
-                       (crate/html [:ul (map note-li-item-ui (search-note keyword))])))))
-
-(defui search-screen []
-  [:div#ltnote
-   (search-input)
-   (search-button)
-   [:div.result]])
+    [:ul (map note-li-item-ui notes)]]])
 
 (behavior ::on-close-destroy
           :triggers #{:close}
@@ -145,17 +125,10 @@
  ::note-list
  :name "Notes"
  :behaviors [::on-close-destroy]
- :init (fn [this]
-         (note-list-ui (get-note-list))
+ :init (fn [this & [notes]]
+         (note-list-ui
+          (if notes notes (get-note-list)))))
 
-         ))
-
-(object/object*
- ::note-search
- :name "Search Note"
- :behaviors [::on-close-destroy]
- :init (fn [this]
-         (search-screen)))
 
 (defn open-note-list []
   (let [x (object/create ::note-list)]
@@ -163,10 +136,6 @@
     (tabs/active! x)
     (.focus (dom/$ ".search-keyword"))))
 
-(defn open-search-screen []
-  (let [x (object/create ::note-search)]
-    (tabs/add! x)
-    (tabs/active! x)))
 
 (defn clean-up []
   (let [now (moment)
@@ -207,9 +176,25 @@
               :desc "Note: Cleanup"
               :exec clean-up})
 
+
+(def search-keyword-input
+  (scmd/options-input {:placeholder "Search"}))
+
+(behavior ::exec-active!
+          :triggers #{:select}
+          :reaction (fn [this search-keyword]
+                      (scmd/exec-active! search-keyword)))
+
+(object/add-behavior! search-keyword-input ::exec-active!)
+
 (cmd/command {:command :note-search
               :desc "Note: Search"
-              :exec open-search-screen})
-
-
-;(open-note-list)
+              :options search-keyword-input
+              :exec (fn [search-keyword]
+                      (let [notes (search-note search-keyword)
+                            x     (object/create ::note-list notes)]
+                        (tabs/add! x)
+                        (tabs/active! x)
+                        (let [elem (dom/$ ".search-keyword")]
+                          (dom/val elem search-keyword)
+                          (.focus elem))))})
